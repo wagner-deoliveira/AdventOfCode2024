@@ -1,7 +1,6 @@
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use crate::utils::utils::read_lines;
 use regex::Regex;
+use std::io::{self, BufRead, Error};
 
 #[derive(Debug)]
 enum Operation {
@@ -22,17 +21,14 @@ fn parse_mul(capture: &str) -> Option<(i32, i32)> {
     }
 }
 
-fn main() -> io::Result<()> {
-    let path = Path::new("src/input3.txt");
-    let file = File::open(path)?;
-
+pub fn main() -> io::Result<()> {
     // Compile regex patterns once
     let re = Regex::new(r"(mul\(\d+,\d+\)|do\(\)|don't\(\))").unwrap();
 
     let mut total_mul = 0;
     let mut should_multiply = true;
 
-    for line in io::BufReader::new(file).lines().filter_map(Result::ok) {
+    for line in read_lines("../inputs/input3.txt")?.into_iter().filter_map(|lines| Result::<String, Error>::ok(Ok(lines))) {
         // Find all operations in one pass
         let operations: Vec<(usize, Operation)> = re.find_iter(&line)
             .filter_map(|m| {
