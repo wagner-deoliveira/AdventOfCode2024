@@ -12,19 +12,6 @@ pub fn main() {
     println!("Total matches: {}", horizontal + vertical + diagonal);
 }
 
-fn count_patterns(text: &str, prefix: &str) -> i32 {
-    let mut count = 0;
-    for (pos, _) in text.match_indices("XMAS") {
-        println!("{} - Found XMAS at position {} in: {}", prefix, pos, text);
-        count += 1;
-    }
-    for (pos, _) in text.match_indices("SAMX") {
-        println!("{} - Found SAMX at position {} in: {}", prefix, pos, text);
-        count += 1;
-    }
-    count
-}
-
 fn check_horizontal(file: &str) -> i32 {
     let mut total = 0;
     for (line_num, line) in file.lines().enumerate() {
@@ -51,9 +38,9 @@ fn check_diagonal(file: &str) -> i32 {
     let cols = lines[0].len();
     let rows = lines.len();
     let mut total = 0;
-    let mut diagonals: Vec<String> = Vec::new();
 
     // Forward diagonals (top-left to bottom-right)
+    // Starting from top row
     for start_col in 0..cols {
         let mut diagonal = String::new();
         let mut row = 0;
@@ -65,11 +52,11 @@ fn check_diagonal(file: &str) -> i32 {
             col += 1;
         }
         if diagonal.len() >= 4 {
-            diagonals.push(diagonal);
+            total += count_patterns(&diagonal, &format!("Forward diagonal from top (0, {})", start_col));
         }
     }
 
-    // Additional forward diagonals starting from first column
+    // Forward diagonals starting from left column (excluding first row)
     for start_row in 1..rows {
         let mut diagonal = String::new();
         let mut row = start_row;
@@ -81,27 +68,28 @@ fn check_diagonal(file: &str) -> i32 {
             col += 1;
         }
         if diagonal.len() >= 4 {
-            diagonals.push(diagonal);
+            total += count_patterns(&diagonal, &format!("Forward diagonal from left ({}, 0)", start_row));
         }
     }
 
     // Backward diagonals (top-right to bottom-left)
-    for start_col in 0..cols {
+    // Starting from top row
+    for start_col in (0..cols).rev() {
         let mut diagonal = String::new();
         let mut row = 0;
         let mut col = start_col;
 
-        while row < rows && col >= 0 {
+        while row < rows && col < cols && col >= 0 {
             diagonal.push(lines[row].chars().nth(col).unwrap());
             row += 1;
             if col > 0 { col -= 1; }
         }
         if diagonal.len() >= 4 {
-            diagonals.push(diagonal);
+            total += count_patterns(&diagonal, &format!("Backward diagonal from top (0, {})", start_col));
         }
     }
 
-    // Additional backward diagonals starting from right column
+    // Backward diagonals starting from right column (excluding first row)
     for start_row in 1..rows {
         let mut diagonal = String::new();
         let mut row = start_row;
@@ -113,14 +101,28 @@ fn check_diagonal(file: &str) -> i32 {
             if col > 0 { col -= 1; }
         }
         if diagonal.len() >= 4 {
-            diagonals.push(diagonal);
+            total += count_patterns(&diagonal, &format!("Backward diagonal from right ({}, {})", start_row, cols-1));
         }
     }
 
-    // Check all diagonals for patterns
-    for (i, diagonal) in diagonals.iter().enumerate() {
-        total += count_patterns(diagonal, &format!("Diagonal {}", i + 1));
+    total
+}
+
+fn count_patterns(text: &str, prefix: &str) -> i32 {
+    let mut count = 0;
+
+    for (pos, _) in text.match_indices("XMAS") {
+        println!("{} - Found XMAS at position {} in: {}", prefix, pos, text);
+        count += 1;
+    }
+    for (pos, _) in text.match_indices("SAMX") {
+        println!("{} - Found SAMX at position {} in: {}", prefix, pos, text);
+        count += 1;
     }
 
-    total
+    if count > 0 {
+        println!("Total patterns in this diagonal: {}\n", count);
+    }
+
+    count
 }
