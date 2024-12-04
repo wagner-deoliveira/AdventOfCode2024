@@ -2,141 +2,125 @@ use crate::utils::utils::read_file;
 
 pub fn main() {
     let file = read_file("../inputs/input4.txt").expect("Something went wrong");
-    let mut total = 0;
+    let horizontal = check_horizontal(&file);
+    let vertical = check_vertical(&file);
+    let diagonal = check_diagonal(&file);
 
-    for line in file.lines() {
-        let horizontal = check_horizontal(line);
-        total += horizontal;
-    }
-
-    let vertical = check_vertical(String::from(&file));
-    let diagonal = check_diagonal(file);
-
-    println!("Total matches: {}", total + vertical + diagonal);
+    println!("Horizontal matches: {}", horizontal);
+    println!("Vertical matches: {}", vertical);
+    println!("Diagonal matches: {}", diagonal);
+    println!("Total matches: {}", horizontal + vertical + diagonal);
 }
 
-fn check_horizontal(line: &str) -> i32 {
+fn count_patterns(text: &str, prefix: &str) -> i32 {
     let mut count = 0;
-    let xmas_count = line.matches("XMAS").count();
-    let samx_count = line.matches("SAMX").count();
-
-    if xmas_count > 0 || samx_count > 0 {
+    for (pos, _) in text.match_indices("XMAS") {
+        println!("{} - Found XMAS at position {} in: {}", prefix, pos, text);
+        count += 1;
+    }
+    for (pos, _) in text.match_indices("SAMX") {
+        println!("{} - Found SAMX at position {} in: {}", prefix, pos, text);
         count += 1;
     }
     count
 }
 
-fn check_vertical(file: String) -> i32 {
-    let lines: Vec<&str> = file.lines().collect();
-
-    let cols = lines[0].len();
-    let rows = lines.len();
-    let mut count = 0;
-
-    for col in 0..cols {
-        let vertical: String = (0..rows)
-            .filter_map(|row| lines.get(row)?.chars().nth(col))
-            .collect();
-
-        if vertical.contains("XMAS") || vertical.contains("SAMX") {
-            count += 1;
-        }
+fn check_horizontal(file: &str) -> i32 {
+    let mut total = 0;
+    for (line_num, line) in file.lines().enumerate() {
+        total += count_patterns(line, &format!("Horizontal line {}", line_num + 1));
     }
-
-    count
+    total
 }
 
-fn check_diagonal(file: String) -> i32 {
+fn check_vertical(file: &str) -> i32 {
+    let lines: Vec<&str> = file.lines().collect();
+    let mut total = 0;
+
+    for col in 0..lines[0].len() {
+        let vertical: String = (0..lines.len())
+            .filter_map(|row| lines.get(row)?.chars().nth(col))
+            .collect();
+        total += count_patterns(&vertical, &format!("Vertical column {}", col + 1));
+    }
+    total
+}
+
+fn check_diagonal(file: &str) -> i32 {
     let lines: Vec<&str> = file.lines().collect();
     let cols = lines[0].len();
     let rows = lines.len();
-    let mut count = 0;
+    let mut total = 0;
     let mut diagonals: Vec<String> = Vec::new();
 
-    // Only check main diagonals and their parallels
-    // Top row starting points (left to right)
+    // Forward diagonals (top-left to bottom-right)
     for start_col in 0..cols {
-        // Forward diagonal (top-right)
-        let mut forward = String::new();
+        let mut diagonal = String::new();
         let mut row = 0;
         let mut col = start_col;
 
         while row < rows && col < cols {
-            if let Some(ch) = lines[row].chars().nth(col) {
-                forward.push(ch);
-            }
+            diagonal.push(lines[row].chars().nth(col).unwrap());
             row += 1;
             col += 1;
         }
-
-        if forward.len() >= 4 {
-            diagonals.push(forward);
-        }
-
-        // Reverse diagonal (top-left)
-        let mut reverse = String::new();
-        row = 0;
-        col = start_col;
-
-        while row < rows && col >= 0 {
-            if let Some(ch) = lines[row].chars().nth(col) {
-                reverse.push(ch);
-            }
-            row += 1;
-            if col > 0 { col -= 1; } else { break; }
-        }
-
-        if reverse.len() >= 4 {
-            diagonals.push(reverse);
+        if diagonal.len() >= 4 {
+            diagonals.push(diagonal);
         }
     }
 
-    // Left column starting points (top to bottom, excluding first row)
+    // Additional forward diagonals starting from first column
     for start_row in 1..rows {
-        // Forward diagonal
-        let mut forward = String::new();
+        let mut diagonal = String::new();
         let mut row = start_row;
         let mut col = 0;
 
         while row < rows && col < cols {
-            if let Some(ch) = lines[row].chars().nth(col) {
-                forward.push(ch);
-            }
+            diagonal.push(lines[row].chars().nth(col).unwrap());
             row += 1;
             col += 1;
         }
-
-        if forward.len() >= 4 {
-            diagonals.push(forward);
+        if diagonal.len() >= 4 {
+            diagonals.push(diagonal);
         }
+    }
 
-        // Reverse diagonal from right column
-        let mut reverse = String::new();
-        row = start_row;
-        col = cols - 1;
+    // Backward diagonals (top-right to bottom-left)
+    for start_col in 0..cols {
+        let mut diagonal = String::new();
+        let mut row = 0;
+        let mut col = start_col;
 
         while row < rows && col >= 0 {
-            if let Some(ch) = lines[row].chars().nth(col) {
-                reverse.push(ch);
-            }
+            diagonal.push(lines[row].chars().nth(col).unwrap());
             row += 1;
-            if col > 0 { col -= 1; } else { break; }
+            if col > 0 { col -= 1; }
         }
-
-        if reverse.len() >= 4 {
-            diagonals.push(reverse);
-        }
-    }
-
-    println!("Diagonal strings: {:?}", diagonals);
-
-    // Check patterns in diagonals
-    for diagonal in &diagonals {
-        if diagonal.contains("XMAS") || diagonal.contains("SAMX") {
-            count += 1;
-            println!("Found pattern in: {}", diagonal);
+        if diagonal.len() >= 4 {
+            diagonals.push(diagonal);
         }
     }
 
-    count
+    // Additional backward diagonals starting from right column
+    for start_row in 1..rows {
+        let mut diagonal = String::new();
+        let mut row = start_row;
+        let mut col = cols - 1;
+
+        while row < rows && col >= 0 {
+            diagonal.push(lines[row].chars().nth(col).unwrap());
+            row += 1;
+            if col > 0 { col -= 1; }
+        }
+        if diagonal.len() >= 4 {
+            diagonals.push(diagonal);
+        }
+    }
+
+    // Check all diagonals for patterns
+    for (i, diagonal) in diagonals.iter().enumerate() {
+        total += count_patterns(diagonal, &format!("Diagonal {}", i + 1));
+    }
+
+    total
 }
