@@ -131,10 +131,11 @@ fn check_cross_pattern(file: &str) -> i32 {
             let has_valid_bottom = check_ms_pattern(&bottom);
 
             if has_valid_top && has_valid_middle && has_valid_bottom {
-                // check if the pattern is valid MAS string
-                let valid_mas_string = format!("{}{}{}", top[0], middle[1], bottom[2]);
-                let valid_mas_string2 = format!("{}{}{}", top[2], middle[1], bottom[0]);
-                if (valid_mas_string == "MAS" || valid_mas_string == "SAM") && (valid_mas_string2 == "MAS" || valid_mas_string2 == "SAM") {
+                let diagonal1 = [top[0], middle[1], bottom[2]];
+                let diagonal2 = [top[2], middle[1], bottom[0]];
+
+                if (diagonal1.iter().collect::<String>() == "MAS" || diagonal1.iter().collect::<String>() == "SAM")
+                    && (diagonal2.iter().collect::<String>() == "MAS" || diagonal2.iter().collect::<String>() == "SAM") {
                     println!("Valid MAS string found at position ({}, {})", row, col);
                     count += 1;
                 }
