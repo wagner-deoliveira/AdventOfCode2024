@@ -35,76 +35,13 @@ fn check_vertical(file: &str) -> i32 {
 
 fn check_diagonal(file: &str) -> i32 {
     let lines: Vec<&str> = file.lines().collect();
-    let cols = lines[0].len();
-    let rows = lines.len();
-    let mut total = 0;
+    let reversed_lines: Vec<&str> = lines.clone().into_iter().rev().collect();
 
-    // Forward diagonals (top-left to bottom-right)
-    // Starting from top row
-    for start_col in 0..cols {
-        let mut diagonal = String::new();
-        let mut row = 0;
-        let mut col = start_col;
+    count_patterns_in_diagonal(lines.clone());
+    count_patterns_in_diagonal(reversed_lines.clone());
 
-        while row < rows && col < cols {
-            diagonal.push(lines[row].chars().nth(col).unwrap());
-            row += 1;
-            col += 1;
-        }
-        if diagonal.len() >= 4 {
-            total += count_patterns(&diagonal, &format!("Forward diagonal from top (0, {})", start_col));
-        }
-    }
-
-    // Forward diagonals starting from left column (excluding first row)
-    for start_row in 1..rows {
-        let mut diagonal = String::new();
-        let mut row = start_row;
-        let mut col = 0;
-
-        while row < rows && col < cols {
-            diagonal.push(lines[row].chars().nth(col).unwrap());
-            row += 1;
-            col += 1;
-        }
-        if diagonal.len() >= 4 {
-            total += count_patterns(&diagonal, &format!("Forward diagonal from left ({}, 0)", start_row));
-        }
-    }
-
-    // Backward diagonals (top-right to bottom-left)
-    // Starting from top row
-    for start_col in (0..cols).rev() {
-        let mut diagonal = String::new();
-        let mut row = 0;
-        let mut col = start_col;
-
-        while row < rows && col < cols && col >= 0 {
-            diagonal.push(lines[row].chars().nth(col).unwrap());
-            row += 1;
-            if col > 0 { col -= 1; }
-        }
-        if diagonal.len() >= 4 {
-            total += count_patterns(&diagonal, &format!("Backward diagonal from top (0, {})", start_col));
-        }
-    }
-
-    // Backward diagonals starting from right column (excluding first row)
-    for start_row in 1..rows {
-        let mut diagonal = String::new();
-        let mut row = start_row;
-        let mut col = cols - 1;
-
-        while row < rows && col >= 0 {
-            diagonal.push(lines[row].chars().nth(col).unwrap());
-            row += 1;
-            if col > 0 { col -= 1; }
-        }
-        if diagonal.len() >= 4 {
-            total += count_patterns(&diagonal, &format!("Backward diagonal from right ({}, {})", start_row, cols-1));
-        }
-    }
-
+    let total = count_patterns_in_diagonal(lines) + count_patterns_in_diagonal(reversed_lines);
+    println!("Total matches: {}", total);
     total
 }
 
@@ -125,4 +62,42 @@ fn count_patterns(text: &str, prefix: &str) -> i32 {
     }
 
     count
+}
+
+fn count_patterns_in_diagonal(lines: Vec<&str>) -> i32 {
+    let cols = lines[0].len();
+    let rows = lines.len();
+    let mut total = 0;
+    let min_value = 4;
+
+    for line in &lines {
+        println!("Reversed line: {}", line);
+    }
+
+    for mut col in 0..cols {
+        let mut diagonal = String::new();
+        let mut row = 0;
+        while row < rows && col < cols {
+            diagonal.push(lines[row].chars().nth(col).unwrap());
+            col += 1;
+            row += 1;
+        }
+        if diagonal.len() >= min_value {
+            total += count_patterns(&diagonal, &format!("Forward diagonal {} starting at col {}", diagonal, rows - row));
+        }
+    }
+
+    for mut row in 1..rows {
+        let mut diagonal = String::new();
+        let mut col = 0;
+        while row < rows && col < cols {
+            diagonal.push(lines[row].chars().nth(col).unwrap());
+            col += 1;
+            row += 1;
+        }
+        if diagonal.len() >= min_value {
+            total += count_patterns(&diagonal, &format!("Forward diagonal {} starting at row {}", diagonal, cols - col));
+        }
+    }
+    total
 }
