@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 type Position = (usize, usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Direction {
     Up,
     Right,
@@ -165,28 +165,109 @@ fn rotate_90_degrees(direction: Direction) -> Direction {
 
 fn find_loop_positions(matrix: &Vec<Vec<char>>) -> HashSet<Position> {
     let mut loop_positions = HashSet::new();
-    let original_path = get_guard_path(&matrix);
-    let (rows, cols) = (matrix.len(), matrix[0].len());
+    let original_path = get_guard_path(matrix);
 
-    // Try each possible position
-    for y in 0..rows {
-        for x in 0..cols {
-            if matrix[y][x] == '.' {  // Only try empty positions
-                let mut test_matrix = matrix.clone();
-                test_matrix[y][x] = '#';  // Place obstruction
+    // Get positions adjacent to the original path
+    let candidates = get_adjacent_positions(&original_path, matrix);
 
-                if creates_loop(&test_matrix, original_path.clone()) {
-                    loop_positions.insert((y, x));
-                }
+    for &pos in &candidates {
+        if matrix[pos.0][pos.1] == '.' {  // Only try empty positions
+            if would_create_loop(matrix, pos, &original_path) {
+                loop_positions.insert(pos);
             }
         }
     }
     loop_positions
 }
 
-fn creates_loop(matrix: &Vec<Vec<char>>, original_path: HashSet<Position>) -> bool {
-    let new_path = get_guard_path(matrix);
-    new_path.len() < original_path.len()  // If path is shorter, we found a loop
+fn get_adjacent_positions(path: &HashSet<Position>, matrix: &Vec<Vec<char>>) -> HashSet<Position> {
+    let mut adjacent = HashSet::new();
+    let (rows, cols) = (matrix.len(), matrix[0].len());
+
+    for &(y, x) in path {
+        // Check all adjacent positions
+        for &(dy, dx) in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
+            let new_y = y as i32 + dy;
+            let new_x = x as i32 + dx;
+
+            if new_y >= 0 && new_y < rows as i32 &&
+                new_x >= 0 && new_x < cols as i32 {
+                adjacent.insert((new_y as usize, new_x as usize));
+            }
+        }
+    }
+
+    // Remove positions that are already walls or the guard's path
+    adjacent.retain(|pos| !path.contains(pos) && matrix[pos.0][pos.1] != '#');
+    adjacent
+}
+
+fn would_create_loop(matrix: &Vec<Vec<char>>, obstruction: Position, original_path: &HashSet<Position>) -> bool {
+    let mut visited = HashSet::new();
+    let mut current_pos = check_guard_position(matrix).unwrap();
+    let mut current_direction = check_direction(&matrix[current_pos.0][current_pos.1]).unwrap();
+    let (rows, cols) = (matrix.len(), matrix[0].len());
+
+    visited.insert(current_pos);
+
+    loop {
+        let (line_num, guard_position) = current_pos;
+        let mut steps = match current_direction {
+            Direction::Up => count_steps_up(matrix, current_pos),
+            Direction::Right => count_steps_right(matrix, current_pos, cols),
+            Direction::Down => count_steps_down(matrix, current_pos, rows),
+            Direction::Left => count_steps_left(matrix, current_pos),
+        };
+
+        // Check if obstruction blocks the path
+        if would_hit_obstruction(current_pos, current_direction, obstruction, steps) {
+            steps = distance_to_obstruction(current_pos, current_direction, obstruction);
+        }
+
+        // If we revisit a position with the same direction, it's a loop
+        let key = (current_pos, current_direction);
+        if visited.contains(&key.0) {
+            return true;
+        }
+        visited.insert(key.0);
+
+        if steps == 0 {  // Hit a wall immediately
+            return false;
+        }
+
+        // Update position
+        current_pos = match current_direction {
+            Direction::Up => (line_num - steps, guard_position),
+            Direction::Right => (line_num, guard_position + steps),
+            Direction::Down => (line_num + steps, guard_position),
+            Direction::Left => (line_num, guard_position - steps),
+        };
+
+        if current_pos.0 == 0 || current_pos.0 == rows - 1 ||
+            current_pos.1 == 0 || current_pos.1 == cols - 1 {
+            return false;
+        }
+
+        current_direction = rotate_90_degrees(current_direction);
+    }
+}
+
+fn would_hit_obstruction(pos: Position, dir: Direction, obstruction: Position, steps: usize) -> bool {
+    match dir {
+        Direction::Up => obstruction.1 == pos.1 && obstruction.0 < pos.0 && obstruction.0 >= pos.0 - steps,
+        Direction::Right => obstruction.0 == pos.0 && obstruction.1 > pos.1 && obstruction.1 <= pos.1 + steps,
+        Direction::Down => obstruction.1 == pos.1 && obstruction.0 > pos.0 && obstruction.0 <= pos.0 + steps,
+        Direction::Left => obstruction.0 == pos.0 && obstruction.1 < pos.1 && obstruction.1 >= pos.1 - steps,
+    }
+}
+
+fn distance_to_obstruction(pos: Position, dir: Direction, obstruction: Position) -> usize {
+    match dir {
+        Direction::Up => pos.0 - obstruction.0 - 1,
+        Direction::Right => obstruction.1 - pos.1 - 1,
+        Direction::Down => obstruction.0 - pos.0 - 1,
+        Direction::Left => pos.1 - obstruction.1 - 1,
+    }
 }
 
 fn get_guard_path(matrix: &Vec<Vec<char>>) -> HashSet<Position> {
