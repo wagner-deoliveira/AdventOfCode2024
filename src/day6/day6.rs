@@ -1,5 +1,6 @@
 use crate::utils::utils::read_file;
 use std::cmp::PartialEq;
+use std::collections::HashSet;
 
 type Position = (usize, usize);
 
@@ -10,7 +11,6 @@ enum Direction {
     Left,
     Down,
 }
-
 impl PartialEq for Direction {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -22,7 +22,6 @@ impl PartialEq for Direction {
         }
     }
 }
-use std::collections::HashSet;
 
 pub fn main() {
     let file = read_file("../inputs/input6.txt").expect("Failed to read input file");
