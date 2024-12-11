@@ -22,15 +22,18 @@ impl PartialEq for Direction {
         }
     }
 }
+use std::collections::HashSet;
 
 pub fn main() {
     let file = read_file("../inputs/input6.txt").expect("Failed to read input file");
     let lines: Vec<&str> = file.lines().collect();
     let matrix: Vec<Vec<char>> = lines.iter().map(|line| line.chars().collect()).collect();
     let find_guard_position = check_guard_position(&matrix);
-    let mut total_steps = 0;
+    let mut visited: HashSet<Position> = HashSet::new();
 
     if let Some((mut line_num, mut guard_position)) = find_guard_position {
+        println!("Guard starts at: ({}, {})", line_num, guard_position);
+        visited.insert((line_num, guard_position));
         let mut current_direction = check_direction(&matrix[line_num][guard_position]).unwrap();
         let (rows, cols) = (matrix.len(), matrix[0].len());
 
@@ -42,7 +45,18 @@ pub fn main() {
                 Direction::Left => count_steps_left(&matrix, (line_num, guard_position)),
             };
 
-            total_steps += steps;
+            println!("Moving {:?} for {} steps", current_direction, steps);
+
+            // Add all positions in the path to visited set
+            for i in 1..=steps {
+                let new_pos = match current_direction {
+                    Direction::Up => (line_num - i, guard_position),
+                    Direction::Right => (line_num, guard_position + i),
+                    Direction::Down => (line_num + i, guard_position),
+                    Direction::Left => (line_num, guard_position - i),
+                };
+                visited.insert(new_pos);
+            }
 
             // Update position based on direction and steps
             match current_direction {
@@ -52,20 +66,20 @@ pub fn main() {
                 Direction::Left => guard_position -= steps,
             };
 
+            println!("New position: ({}, {})", line_num, guard_position);
+
             // Check if we've reached the boundary
-            if line_num == 0
-                || line_num == rows - 1
-                || guard_position == 0
-                || guard_position == cols - 1
-            {
+            if line_num == 0 || line_num == rows - 1 ||
+               guard_position == 0 || guard_position == cols - 1 {
                 break;
             }
 
             // Rotate and continue
             current_direction = rotate_90_degrees(current_direction);
+            println!("Rotating to {:?}", current_direction);
         }
 
-        println!("Total steps taken: {}", total_steps);
+        println!("Total distinct positions visited: {}", visited.len());
     }
 }
 
@@ -142,6 +156,5 @@ fn rotate_90_degrees(direction: Direction) -> Direction {
         Direction::Right => Direction::Down,
         Direction::Down => Direction::Left,
         Direction::Left => Direction::Up,
-        _ => panic!("Invalid direction"),
     }
 }
