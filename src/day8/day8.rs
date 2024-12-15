@@ -15,15 +15,15 @@ pub fn main() {
     for (row, line) in lines.iter().enumerate() {
         for (col, ch) in line.chars().enumerate() {
             if ch != '.' {
-                antennas.entry(ch)
-                    .or_default()
-                    .push(Point {
-                        row: row as i32,
-                        col: col as i32
-                    });
+                antennas.entry(ch).or_default().push(Point {
+                    row: row as i32,
+                    col: col as i32,
+                });
             }
         }
     }
+
+    println!("Antennas map: {:?}", antennas.iter().collect::<Vec<_>>());
 
     let rows = lines.len() as i32;
     let cols = lines[0].len() as i32;
@@ -33,7 +33,7 @@ pub fn main() {
     for (_, positions) in antennas.iter() {
         // Check all pairs of antennas with same frequency
         for i in 0..positions.len() {
-            for j in (i+1)..positions.len() {
+            for j in (i + 1)..positions.len() {
                 let p1 = positions[i];
                 let p2 = positions[j];
 
@@ -43,12 +43,12 @@ pub fn main() {
 
                 // Calculate antinode positions (1/3 and 2/3 points)
                 let antinode1 = Point {
-                    row: p1.row + dy/3,
-                    col: p1.col + dx/3
+                    row: p1.row + dy / 3,
+                    col: p1.col + dx / 3,
                 };
                 let antinode2 = Point {
-                    row: p1.row + 2*dy/3,
-                    col: p1.col + 2*dx/3
+                    row: p1.row + 2 * dy / 3,
+                    col: p1.col + 2 * dx / 3,
                 };
 
                 // Add antinodes if within bounds
@@ -68,3 +68,4 @@ pub fn main() {
 fn in_bounds(p: Point, rows: i32, cols: i32) -> bool {
     p.row >= 0 && p.row < rows && p.col >= 0 && p.col < cols
 }
+
