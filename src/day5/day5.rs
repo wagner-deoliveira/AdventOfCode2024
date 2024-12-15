@@ -3,10 +3,7 @@ use std::io::BufRead;
 
 pub fn main() {
     let file = read_lines("../inputs/input5.txt").expect("Failed to read input file");
-    let split_index = file
-        .iter()
-        .position(|line| line.is_empty())
-        .unwrap_or(file.len());
+    let split_index = file.iter().position(|line| line.is_empty()).unwrap_or(file.len());
 
     let first_part: Vec<String> = file[..split_index].to_vec();
     let second_part: Vec<String> = file[split_index + 1..].to_vec();
@@ -14,71 +11,96 @@ pub fn main() {
 
     for entry in &second_part {
         let values: Vec<&str> = entry.split(',').collect();
-        let (is_valid, problem_index) = is_valid_arrangement(&first_part, &values);
-        let mut skip_entry = !is_valid;
+        let (is_valid, _) = is_valid_arrangement(&first_part, &values);
 
-        if skip_entry {
-            let mut swapped_entry: Vec<&str> = values.clone();
-            if let Some(start_index) = problem_index {
-                // Start swapping from the problematic index
-                for i in start_index..values.len() - 1 {
-                    // println!("Index to swap {:?}", i);
-                    // println!("Swapping entries in {:?}", swapped_entry);
-                    swapped_entry.swap(i, i + 1);
-                    // println!("Swapped entry string {:?}", swapped_entry);
-                    let (is_valid_after_swap, _) =
-                        is_valid_arrangement(&first_part, &swapped_entry);
-                    if is_valid_after_swap {
-                        skip_entry = false;
-                        let valid_entry: Vec<i32> = swapped_entry
-                            .iter()
-                            .map(|&s| s.parse::<i32>().unwrap())
-                            .collect();
-                        // println!("Valid entry: {:?}", valid_entry);
-                        let middle_index = swapped_entry.len() / 2;
-                        middle_elements.push(valid_entry[middle_index]);
-                        break;
-                    }
-
-                    if i+1 == values.len() - 1 {
-                        // println!("Index to swap {:?} and swapping entries in {:?} plus value length {:?}", i, swapped_entry, values.len() - 1);
-                        // println!("Starting index minus value length {:?}", start_index - values.len() - 1);
-                        for i in (0..values.len() - 1).rev() {
-                            // println!("Index to swap {:?}", i);
-                            if i > start_index {
-                                swapped_entry.swap(i, i - 1);
-                                // println!("Swapped entry string {:?}", swapped_entry);
-                                let (is_valid_after_swap, _) =
-                                    is_valid_arrangement(&first_part, &swapped_entry);
-                                if is_valid_after_swap {
-                                    skip_entry = false;
-                                    let valid_entry: Vec<i32> = swapped_entry
-                                        .iter()
-                                        .map(|&s| s.parse::<i32>().unwrap())
-                                        .collect();
-                                    // println!("Valid entry: {:?}", valid_entry);
-                                    let middle_index = swapped_entry.len() / 2;
-                                    middle_elements.push(valid_entry[middle_index]);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if !skip_entry && problem_index.is_none() {
-            // let valid_entry: Vec<i32> = values.iter().map(|&s| s.parse::<i32>().unwrap()).collect();
-            // println!("Valid entry: {:?}", valid_entry);
-            // let middle_index = valid_entry.len() / 2;
-            // middle_elements.push(valid_entry[middle_index]);
+        if !is_valid {
+            let ordered_values = correct_order(&values);
+            let middle_index = ordered_values.len() / 2;
+            middle_elements.push(ordered_values[middle_index]);
         }
     }
 
     println!("Middle elements: {:?}", middle_elements);
     let sum_middle_elements: i32 = middle_elements.iter().sum();
     println!("Sum of middle elements: {}", sum_middle_elements);
+    /*    let file = read_lines("../inputs/input5.txt").expect("Failed to read input file");
+        let split_index = file
+            .iter()
+            .position(|line| line.is_empty())
+            .unwrap_or(file.len());
+
+        let first_part: Vec<String> = file[..split_index].to_vec();
+        let second_part: Vec<String> = file[split_index + 1..].to_vec();
+        let mut middle_elements: Vec<i32> = vec![];
+
+        for entry in &second_part {
+            let values: Vec<&str> = entry.split(',').collect();
+            let (is_valid, problem_index) = is_valid_arrangement(&first_part, &values);
+            let mut skip_entry = !is_valid;
+
+            if skip_entry {
+                let mut swapped_entry: Vec<&str> = values.clone();
+                if let Some(start_index) = problem_index {
+                    // Start swapping from the problematic index
+                    for i in start_index..values.len() - 1 {
+                        // println!("Index to swap {:?}", i);
+                        // println!("Swapping entries in {:?}", swapped_entry);
+                        swapped_entry.swap(i, i + 1);
+                        // println!("Swapped entry string {:?}", swapped_entry);
+                        let (is_valid_after_swap, _) =
+                            is_valid_arrangement(&first_part, &swapped_entry);
+                        if is_valid_after_swap {
+                            skip_entry = false;
+                            let valid_entry: Vec<i32> = swapped_entry
+                                .iter()
+                                .map(|&s| s.parse::<i32>().unwrap())
+                                .collect();
+                            // println!("Valid entry: {:?}", valid_entry);
+                            let middle_index = swapped_entry.len() / 2;
+                            middle_elements.push(valid_entry[middle_index]);
+                            break;
+                        }
+
+                        if i+1 == values.len() - 1 {
+                            // println!("Index to swap {:?} and swapping entries in {:?} plus value length {:?}", i, swapped_entry, values.len() - 1);
+                            // println!("Starting index minus value length {:?}", start_index - values.len() - 1);
+                            for i in (0..values.len() - 1).rev() {
+                                // println!("Index to swap {:?}", i);
+                                if i > start_index {
+                                    swapped_entry.swap(i, i - 1);
+                                    // println!("Swapped entry string {:?}", swapped_entry);
+                                    let (is_valid_after_swap, _) =
+                                        is_valid_arrangement(&first_part, &swapped_entry);
+                                    if is_valid_after_swap {
+                                        skip_entry = false;
+                                        let valid_entry: Vec<i32> = swapped_entry
+                                            .iter()
+                                            .map(|&s| s.parse::<i32>().unwrap())
+                                            .collect();
+                                        // println!("Valid entry: {:?}", valid_entry);
+                                        let middle_index = swapped_entry.len() / 2;
+                                        middle_elements.push(valid_entry[middle_index]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !skip_entry && problem_index.is_none() {
+                // let valid_entry: Vec<i32> = values.iter().map(|&s| s.parse::<i32>().unwrap()).collect();
+                // println!("Valid entry: {:?}", valid_entry);
+                // let middle_index = valid_entry.len() / 2;
+                // middle_elements.push(valid_entry[middle_index]);
+            }
+        }
+
+        println!("Middle elements: {:?}", middle_elements);
+        let sum_middle_elements: i32 = middle_elements.iter().sum();
+        println!("Sum of middle elements: {}", sum_middle_elements);
+    */
 }
 
 fn check_if_line_contains_value(line: &Vec<String>, value: &str) -> Vec<String> {
@@ -126,4 +148,10 @@ fn is_valid_arrangement(first_part: &Vec<String>, values: &[&str]) -> (bool, Opt
         }
     }
     (true, None)
+}
+
+fn correct_order(values: &[&str]) -> Vec<i32> {
+    let mut numbers: Vec<i32> = values.iter().map(|&s| s.parse::<i32>().unwrap()).collect();
+    numbers.sort_by(|a, b| b.cmp(a));  // Sort in descending order
+    numbers
 }
